@@ -42,3 +42,15 @@ class ApplicationUpdate(BaseModel):
     status: Optional[ApplicationStatus] = None
     job_url: Optional[str] = None
     notes: Optional[str] = None    
+
+class PaginationMetadata(BaseModel):
+    page: int
+    limit: int
+    total: int
+    total_pages: int
+    has_next: bool
+    has_previous: bool
+
+class ApplicationListResponse(BaseModel):
+    metadata: PaginationMetadata
+    items: list[ApplicationResponse]    
