@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
-
+from datetime import datetime
 
 class ApplicationStatus(str, Enum):
     interested = "interested"
@@ -23,7 +23,9 @@ class ApplicationCreate(BaseModel):
 
 class ApplicationResponse(ApplicationCreate):
     id: int
-
+    created_at: datetime
+    updated_at: datetime
+    
     model_config = ConfigDict(from_attributes=True)
 
 
