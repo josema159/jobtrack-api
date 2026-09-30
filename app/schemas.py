@@ -84,3 +84,13 @@ class StatisticsResponse(BaseModel):
     by_status: dict[str, int]
     interview_rate: float
     offer_rate: float    
+
+class ApplicationStatusHistoryResponse(BaseModel):
+    id: int
+    from_status: ApplicationStatus | None
+    to_status: ApplicationStatus
+    changed_at: datetime
+
+    model_config = ConfigDict(
+        from_attributes=True
+    )    

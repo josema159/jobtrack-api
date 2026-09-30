@@ -28,10 +28,21 @@ def create_application(
     )
 
     db.add(new_application)
+    db.flush()
+
+    history = models.ApplicationStatusHistory(
+        application_id=new_application.id,
+        from_status=None,
+        to_status=new_application.status
+    )
+
+    db.add(history)
+
     db.commit()
     db.refresh(new_application)
 
     return new_application
+
 # Get applications
 @router.get(
     "/",
@@ -155,9 +166,23 @@ def update_application(
             status_code=404,
             detail="Application not found"
         )
+    
+    old_status = application.status
 
     for field, value in application_data.model_dump().items():
         setattr(application, field, value)
+
+    if (
+        "status" in update_data
+        and application.status != old_status
+    ):
+        history = models.ApplicationStatusHistory(
+            application_id=application.id,
+            from_status=old_status,
+            to_status=application.status
+        )
+
+        db.add(history)
 
     db.commit()
     db.refresh(application)
@@ -196,6 +221,10 @@ def delete_application(
     "/{application_id}",
     response_model=schemas.ApplicationResponse
 )
+@router.patch(
+    "/{application_id}",
+    response_model=schemas.ApplicationResponse
+)
 def patch_application(
     application_id: int,
     application_data: schemas.ApplicationUpdate,
@@ -215,14 +244,76 @@ def patch_application(
             detail="Application not found"
         )
 
+    old_status = application.status
+
     update_data = application_data.model_dump(
-        exclude_unset=True
+        exclude_unset=True,
+        mode="json"
     )
 
     for field, value in update_data.items():
         setattr(application, field, value)
 
+    # Solo generamos historial si realmente cambió el estado
+    if (
+        "status" in update_data
+        and application.status != old_status
+    ):
+        history = models.ApplicationStatusHistory(
+            application_id=application.id,
+            from_status=old_status,
+            to_status=application.status
+        )
+
+        db.add(history)
+
     db.commit()
     db.refresh(application)
 
     return application
+
+# Status History of an application
+@router.get(
+    "/{application_id}/history",
+    response_model=list[
+        schemas.ApplicationStatusHistoryResponse
+    ]
+)
+def get_application_history(
+    application_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    application_statement = select(
+        models.Application
+    ).where(
+        models.Application.id == application_id,
+        models.Application.user_id == current_user.id
+    )
+
+    application = db.scalar(
+        application_statement
+    )
+
+    if application is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Application not found"
+        )
+
+    history_statement = (
+        select(models.ApplicationStatusHistory)
+        .where(
+            models.ApplicationStatusHistory.application_id
+            == application_id
+        )
+        .order_by(
+            models.ApplicationStatusHistory.changed_at
+        )
+    )
+
+    history = db.scalars(
+        history_statement
+    ).all()
+
+    return history
