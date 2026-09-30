@@ -166,16 +166,17 @@ def update_application(
             status_code=404,
             detail="Application not found"
         )
-    
+        
     old_status = application.status
 
-    for field, value in application_data.model_dump().items():
+    update_data = application_data.model_dump(
+        mode="json"
+    )
+
+    for field, value in update_data.items():
         setattr(application, field, value)
 
-    if (
-        "status" in update_data
-        and application.status != old_status
-    ):
+    if application.status != old_status:
         history = models.ApplicationStatusHistory(
             application_id=application.id,
             from_status=old_status,
@@ -217,10 +218,7 @@ def delete_application(
 
     return
 
-@router.patch(
-    "/{application_id}",
-    response_model=schemas.ApplicationResponse
-)
+
 @router.patch(
     "/{application_id}",
     response_model=schemas.ApplicationResponse
@@ -308,7 +306,8 @@ def get_application_history(
             == application_id
         )
         .order_by(
-            models.ApplicationStatusHistory.changed_at
+            models.ApplicationStatusHistory.changed_at,
+            models.ApplicationStatusHistory.id
         )
     )
 

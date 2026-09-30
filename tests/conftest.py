@@ -7,6 +7,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from tests.helpers import create_authenticated_user
 
 # Configuración exclusiva para tests.
 # Debe establecerse antes de importar la aplicación.
@@ -62,3 +63,7 @@ def reset_database():
 @pytest.fixture
 def client():
     return TestClient(app)
+
+@pytest.fixture
+def auth_headers(client):
+    return create_authenticated_user(client)
