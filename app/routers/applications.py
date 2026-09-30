@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.database import get_db
+from app.dependencies import get_current_user
 
 router = APIRouter(
     prefix="/applications",
@@ -18,10 +19,12 @@ router = APIRouter(
 )
 def create_application(
     application: schemas.ApplicationCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
 ):
     new_application = models.Application(
-        **application.model_dump()
+        **application.model_dump(),
+        user_id=current_user.id
     )
 
     db.add(new_application)
@@ -29,7 +32,6 @@ def create_application(
     db.refresh(new_application)
 
     return new_application
-
 # Get applications
 @router.get(
     "/",
@@ -41,9 +43,12 @@ def get_applications(
     company: str | None = None,
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=10, ge=1, le=100),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
 ):
-    filters = []
+    filters = [
+        models.Application.user_id == current_user.id
+    ]
 
     if status is not None:
         filters.append(
@@ -109,12 +114,15 @@ def get_applications(
 )
 def get_application(
     application_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
 ):
-    application = db.get(
-        models.Application,
-        application_id
+    statement = select(models.Application).where(
+        models.Application.id == application_id,
+        models.Application.user_id == current_user.id
     )
+
+    application = db.scalar(statement)
 
     if application is None:
         raise HTTPException(
@@ -132,12 +140,15 @@ def get_application(
 def update_application(
     application_id: int,
     application_data: schemas.ApplicationCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
 ):
-    application = db.get(
-        models.Application,
-        application_id
+    statement = select(models.Application).where(
+        models.Application.id == application_id,
+        models.Application.user_id == current_user.id
     )
+
+    application = db.scalar(statement)
 
     if application is None:
         raise HTTPException(
@@ -160,12 +171,15 @@ def update_application(
 )
 def delete_application(
     application_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
 ):
-    application = db.get(
-        models.Application,
-        application_id
+    statement = select(models.Application).where(
+        models.Application.id == application_id,
+        models.Application.user_id == current_user.id
     )
+
+    application = db.scalar(statement)
 
     if application is None:
         raise HTTPException(
@@ -185,12 +199,15 @@ def delete_application(
 def patch_application(
     application_id: int,
     application_data: schemas.ApplicationUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
 ):
-    application = db.get(
-        models.Application,
-        application_id
+    statement = select(models.Application).where(
+        models.Application.id == application_id,
+        models.Application.user_id == current_user.id
     )
+
+    application = db.scalar(statement)
 
     if application is None:
         raise HTTPException(

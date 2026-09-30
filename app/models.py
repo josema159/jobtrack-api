@@ -1,7 +1,6 @@
 from datetime import datetime
-from sqlalchemy import DateTime, String, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
-
+from sqlalchemy import DateTime, ForeignKey, String, Text, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
 
@@ -56,6 +55,14 @@ class Application(Base):
         onupdate=func.now(),
         nullable=False
     )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True
+    )
+    user: Mapped["User"] = relationship(
+        back_populates="applications"
+    )
 
 class User(Base):
     __tablename__ = "users"
@@ -89,3 +96,7 @@ class User(Base):
         onupdate=func.now(),
         nullable=False
     )    
+    
+    applications: Mapped[list["Application"]] = relationship(
+        back_populates="user"
+    )
