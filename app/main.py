@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
 from app import models
-from app.routers import applications,auth
+from app.routers import applications, auth, statistics
 
 
 app = FastAPI(
@@ -13,6 +13,7 @@ app = FastAPI(
 
 app.include_router(applications.router)
 app.include_router(auth.router)
+app.include_router(statistics.router)
 
 @app.get("/")
 def root():

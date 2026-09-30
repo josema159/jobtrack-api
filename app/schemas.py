@@ -78,3 +78,9 @@ class UserResponse(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str    
+
+class StatisticsResponse(BaseModel):
+    total: int
+    by_status: dict[str, int]
+    interview_rate: float
+    offer_rate: float    
